@@ -1,0 +1,17 @@
+FACTS:monkey_on_floor,box_on_floor,banana_on_ceiling
+GOALS:has_banana
+****
+RULE:go_to_box
+PRECONDS:monkey_on_floor
+ADD:monkey_near_box
+DEL:
+****
+RULE:climb_box
+PRECONDS:monkey_near_box,box_on_floor
+ADD:monkey_on_box
+DEL:monkey_on_floor
+****
+RULE:grab_banana
+PRECONDS:monkey_on_box,banana_on_ceiling
+ADD:has_banana
+DEL:
