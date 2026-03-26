@@ -211,6 +211,30 @@ int isSameState(State* s1, State* s2) {
     return 1;
 }
 
+
+int isValidState(State* s) {
+    int farmer_L = hasFact(s->facts, s->num_facts, "farmer_L");
+    int farmer_R = hasFact(s->facts, s->num_facts, "farmer_R");
+
+    int wolf_L = hasFact(s->facts, s->num_facts, "wolf_L");
+    int goat_L = hasFact(s->facts, s->num_facts, "goat_L");
+    int cabbage_L = hasFact(s->facts, s->num_facts, "cabbage_L");
+
+    int wolf_R = hasFact(s->facts, s->num_facts, "wolf_R");
+    int goat_R = hasFact(s->facts, s->num_facts, "goat_R");
+    int cabbage_R = hasFact(s->facts, s->num_facts, "cabbage_R");
+
+    // Goat + cabbage alone on a side
+    if (goat_L && cabbage_L && !farmer_L) return 0;
+    if (goat_R && cabbage_R && !farmer_R) return 0;
+
+    // Wolf + goat alone on a side
+    if (wolf_L && goat_L && !farmer_L) return 0;
+    if (wolf_R && goat_R && !farmer_R) return 0;
+
+    return 1; // state is valid
+}
+
 // Fonction principale de résolution (Backtracking)
 void solve() {
     State memory[MAX_DEPTH];
@@ -247,7 +271,12 @@ void solve() {
                 for(int k=0; k<rules[i].num_dels; k++) removeFact(newState.facts, &newState.num_facts, rules[i].dels[k]);
                 // Appliquer ADD
                 for(int k=0; k<rules[i].num_adds; k++) addFact(newState.facts, &newState.num_facts, rules[i].adds[k]);
-                
+
+                // Vérifier si l'état respecte les contraintes
+                if (!isValidState(&newState)) {
+                    continue; // ignorer cet état interdit
+                }                      
+              
                 // --- Anti-Loop Check (Simple) ---
                 // Vérifier si ce nouvel état existe déjà dans le chemin actuel (ancêtres)
                 int already_seen = 0;
