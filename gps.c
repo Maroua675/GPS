@@ -43,27 +43,26 @@ int num_rules = 0;
 
 // Fonction fournie dans le sujet pour découper les lignes
 int parseLine(char source[], String cible[]) {
-    int i = 0, n = 0;
-    // Ignorer ce qui est avant les ':'
-    while (source[i] != ':' && source[i] != '\0') i++;
-    if (source[i] == '\0') return 0; // Pas de ':' trouvé
-    i++; 
+    int n = 0;
+    char *token = strtok(source, ":"); // ignorer ce qui est avant ':'
+    token = strtok(NULL, ":"); // la partie après ':'
+    if (!token) return 0;
 
-    int j = i; 
-    while (source[i] != '\0') {
-        // Si on trouve une virgule ou la fin de ligne (et que ce n'est pas une ligne vide)
-        if (source[i] == ',' || source[i] == '\n' || source[i] == '\r') {
-            if (i > j) { // S'il y a des caractères à copier
-                int len = i - j;
-                if (len >= MAX_STR) len = MAX_STR - 1;
-                memcpy(cible[n], &source[j], len);
-                cible[n][len] = '\0'; // Assurer la fin de chaîne
-                n++;
-            }
-            j = i + 1;
+    char *fact = strtok(token, ",");
+    while (fact != NULL) {
+        // enlever les espaces au début et à la fin
+        while(*fact == ' ') fact++;
+        char *end = fact + strlen(fact) - 1;
+        while(end > fact && (*end == ' ' || *end == '\n' || *end == '\r')) {
+            *end = '\0';
+            end--;
         }
-        if (source[i] == '\n' || source[i] == '\r') break;
-        i++;
+
+        if (strlen(fact) > 0) {
+            strcpy(cible[n], fact);
+            n++;
+        }
+        fact = strtok(NULL, ",");
     }
     return n;
 }
@@ -106,50 +105,78 @@ void loadProblem(const char* filename) {
     }
 
     char line[512];
-    int mode = 0; // 0:None, 1:Facts, 2:Goals, 3:Rule
-    
+    int mode = 0; // 0:none, 1:rule
+
     while (fgets(line, sizeof(line), file)) {
+
         // Nettoyage fin de ligne
         line[strcspn(line, "\r\n")] = 0;
 
-        // Ignorer commentaires et lignes vides
-        if (strlen(line) < 2 || (line[0] == '/' && line[1] == '/')) continue;
-        if (strncmp(line, "****", 4) == 0) { mode = 0; continue; }
+        // Ignorer lignes vides
+        if (strlen(line) == 0) continue;
 
-        if (strncmp(line, "FACTS:", 6) == 0) {
+        // Séparateur
+        if (strncmp(line, "****", 4) == 0) {
+            mode = 0;
+            continue;
+        }
+
+        // ---------- CHANGED ----------
+        // start: au lieu de FACTS:
+        if (strncmp(line, "start:", 6) == 0) {
             num_initial_facts = parseLine(line, initial_facts);
         }
-        else if (strncmp(line, "GOALS:", 6) == 0) {
+
+        // ---------- CHANGED ----------
+        // finish: au lieu de GOALS:
+        else if (strncmp(line, "finish:", 7) == 0) {
             num_goal_facts = parseLine(line, goal_facts);
         }
-        else if (strncmp(line, "RULE:", 5) == 0) {
-            mode = 3;
-            // Récupérer le nom de la règle (un seul mot après RULE:)
-            char dummy[10]; // juste pour avancer le parsing
+
+        // ---------- CHANGED ----------
+        // action: au lieu de RULE:
+        else if (strncmp(line, "action:", 7) == 0) {
+            mode = 1;
+
             String temp[1];
             parseLine(line, temp);
             strcpy(rules[num_rules].name, temp[0]);
-            
-            // Initialiser les compteurs de la nouvelle règle
+
             rules[num_rules].num_preconds = 0;
             rules[num_rules].num_adds = 0;
             rules[num_rules].num_dels = 0;
         }
-        else if (mode == 3) {
-            if (strncmp(line, "PRECONDS:", 9) == 0) {
-                rules[num_rules].num_preconds = parseLine(line, rules[num_rules].preconds);
+
+        // ---------- CHANGED ----------
+        else if (mode == 1) {
+
+            // preconds: au lieu de PRECONDS:
+            if (strncmp(line, "preconds:", 9) == 0) {
+                rules[num_rules].num_preconds =
+                    parseLine(line, rules[num_rules].preconds);
             }
-            else if (strncmp(line, "ADD:", 4) == 0) {
-                rules[num_rules].num_adds = parseLine(line, rules[num_rules].adds);
+
+            // add: au lieu de ADD:
+            else if (strncmp(line, "add:", 4) == 0) {
+                rules[num_rules].num_adds =
+                    parseLine(line, rules[num_rules].adds);
             }
-            else if (strncmp(line, "DEL:", 4) == 0) {
-                rules[num_rules].num_dels = parseLine(line, rules[num_rules].dels);
-                num_rules++; // Fin de la définition de cette règle, on passe à la suivante
+
+            // delete: au lieu de DEL:
+            else if (strncmp(line, "delete:", 7) == 0) {
+                rules[num_rules].num_dels =
+                    parseLine(line, rules[num_rules].dels);
+
+                // Fin de règle
+                num_rules++;
             }
         }
     }
+
     fclose(file);
-    printf("Chargement termine: %d Faits initiaux, %d Buts, %d Regles.\n", num_initial_facts, num_goal_facts, num_rules);
+
+    printf("Chargement termine: %d Faits initiaux, %d Buts, %d Regles.\n",
+           num_initial_facts, num_goal_facts, num_rules);
 }
 
 // --- MOTEUR DE RAISONNEMENT (Parties 2 et 3) ---
@@ -292,7 +319,7 @@ void solve() {
 
 int main() {
     char filename[100];
-    printf("Entrez le nom du fichier probleme (ex: monkey.txt ou wolf_goat_cabbage.txt) : ");
+    printf("Entrez le nom du fichier probleme (ex: monkey.txt / school.txt / blocks.txt ou wolf_goat_cabbage.txt / ) : ");
     scanf("%s", filename);
 
     loadProblem(filename);

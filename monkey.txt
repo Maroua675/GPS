@@ -1,17 +1,32 @@
-FACTS:monkey_on_floor,box_on_floor,banana_on_ceiling
-GOALS:has_banana
+start:at door,on floor,has ball,hungry,chair at door,
+finish:not hungry,
 ****
-RULE:go_to_box
-PRECONDS:monkey_on_floor
-ADD:monkey_near_box
-DEL:
+action:climb on chair,
+preconds:chair at middle room,at middle room,on floor,
+add:at bananas,on chair,
+delete:at middle room,on floor,
 ****
-RULE:climb_box
-PRECONDS:monkey_near_box,box_on_floor
-ADD:monkey_on_box
-DEL:monkey_on_floor
+action:push chair from door to middle room,
+preconds:chair at door,at door,
+add:chair at middle room,at middle room,
+delete:chair at door,at door,
 ****
-RULE:grab_banana
-PRECONDS:monkey_on_box,banana_on_ceiling
-ADD:has_banana
-DEL:
+action:walk from door to middle room,
+preconds:at door,on floor,
+add:at middle room,
+delete:at door,
+****
+action:grasp bananas,
+preconds:at bananas,empty handed,
+add:has bananas,
+delete:empty handed,
+****
+action:drop ball,
+preconds:has ball,
+add:empty handed,
+delete:has ball,
+****
+action:eat bananas,
+preconds:has bananas,
+add:empty handed,not hungry,
+delete:has bananas,hungry,
